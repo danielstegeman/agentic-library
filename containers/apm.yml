@@ -1,0 +1,8 @@
+name: containers
+version: 1.0.0
+description: Dev container skills — generate devcontainer.json, Dockerfile, and Docker Compose configurations following the open Dev Container Specification (containers.dev).
+author: Stegeman
+
+dependencies:
+  apm: []
+  mcp: []

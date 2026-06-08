@@ -6,5 +6,3 @@ author: Stegeman
 dependencies:
   apm: []
   mcp: []
-
-includes: auto

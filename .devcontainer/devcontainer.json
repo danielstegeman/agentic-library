@@ -1,0 +1,25 @@
+{
+    "name": "Agentic Library Dev Container",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:1-9.0",
+
+    "features": {
+        "ghcr.io/devcontainers/features/azure-cli:1": {},
+        "ghcr.io/devcontainers/features/powershell:2.0.2": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/python:1": {
+            "version": "3.12"
+        }
+    },
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-dotnettools.csdevkit",
+                "ms-vscode.powershell",
+                "ms-python.python",
+                "github.copilot",
+                "github.copilot-chat"
+            ]
+        }
+    }
+}

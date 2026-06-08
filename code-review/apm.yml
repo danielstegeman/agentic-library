@@ -6,5 +6,3 @@ author: danielstegeman
 dependencies:
   apm: []
   mcp: []
-
-includes: auto
