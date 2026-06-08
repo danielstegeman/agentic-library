@@ -1,7 +1,7 @@
 name: agent-engineering
 version: 1.0.0
 description: Meta-skills and agents for building, improving, and running AI agents — skill creator, agent artifacts, planning, context improvement, design challenge, logging guidelines, wiki search, and Copilot docs lookup.
-author: Stegeman
+author: danielstegeman
 
 dependencies:
   apm: []
