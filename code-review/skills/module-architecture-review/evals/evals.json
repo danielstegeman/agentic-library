@@ -1,0 +1,25 @@
+{
+  "skill_name": "module-architecture-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this PowerShell module (.psm1 and .psd1) for module architecture issues. Check the export conventions, manifest consistency, and function organization.",
+      "expected_output": "Should flag: (1) Get-ArenaMsiPath is exported for Pester mocking but has no dedicated section marker, (2) FunctionsToExport in the manifest is not alphabetically sorted",
+      "files": ["evals/files/ATS.Installation.psm1", "evals/files/ATS.Installation.psd1"],
+      "expectations": [
+        "Flags that Get-ArenaMsiPath appears to be exported for testing/mocking but lacks a dedicated section marker like '# Exported for testing'",
+        "Flags that FunctionsToExport in the .psd1 is not alphabetically sorted (Test, Install, Get should be Get, Install, Test)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review these two PowerShell modules for cross-module architecture issues. Check for code duplication and shared utility patterns.",
+      "expected_output": "Should flag: Get-SafePath is duplicated across both modules and should be extracted to a shared/common module",
+      "files": ["evals/files/ATS.Installation2.psm1", "evals/files/ATS.Configuration.psm1"],
+      "expectations": [
+        "Flags that Get-SafePath is duplicated identically across ATS.Installation and ATS.Configuration modules",
+        "Recommends extracting the shared utility to a common module"
+      ]
+    }
+  ]
+}

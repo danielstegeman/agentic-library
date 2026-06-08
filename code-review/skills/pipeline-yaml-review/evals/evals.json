@@ -1,0 +1,27 @@
+{
+  "skill_name": "pipeline-yaml-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this Azure DevOps pipeline YAML for template referencing, naming conventions, and parameter design issues.",
+      "expected_output": "Should flag: (1) relative template path ./templates/DeployArena.yml instead of absolute from repo root, (2) PascalCase filename DeployArena.yml instead of kebab-case, (3) parameters lack explicit type declarations",
+      "files": ["evals/files/deploy-pipeline.yml"],
+      "expectations": [
+        "Flags the relative template path (./templates/DeployArena.yml) and recommends an absolute path from the repository root",
+        "Flags the PascalCase filename DeployArena.yml and recommends kebab-case (deploy-arena.yml)",
+        "Flags that parameters lack explicit type declarations (environment should have type: string, doRestore should have type: boolean)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this Azure DevOps pipeline YAML for DRY violations and operational hygiene issues.",
+      "expected_output": "Should flag: (1) DeployO and DeployT stages are duplicated — should use each expression or template, (2) PowerShell tasks missing failOnStderr: true, (3) Cleanup stage missing condition: always()",
+      "files": ["evals/files/multi-stage-pipeline.yml"],
+      "expectations": [
+        "Flags the duplicated DeployO/DeployT stages and recommends using an each expression or stage template",
+        "Flags that PowerShell@2 tasks are missing failOnStderr: true",
+        "Flags that the Cleanup stage has no condition and should use condition: always() to run even on failure"
+      ]
+    }
+  ]
+}

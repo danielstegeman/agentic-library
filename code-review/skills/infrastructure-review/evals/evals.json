@@ -1,0 +1,49 @@
+{
+  "skill_name": "infrastructure-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review these two files from a PR about service handling infrastructure: OpsObjects/PrimeInstall/components/ADS/install.yml and OpsObjects/PrimeInstall/modules/PrimeInstall.Service/PrimeInstall.Service.psm1. These were reviewed by a senior engineer who left 25+ comments. I want to see if the review skill catches the same categories of issues. Focus on error handling, consistency, module usage patterns, and deployment quality.",
+      "expected_output": "Should catch the same categories flagged in the original review: error handling issues (Write-Warning where throw is needed, broad try-catch scopes), consistency problems (duplicated validation logic, inconsistent data structures across similar functions), module usage (using $LASTEXITCODE instead of structured output from sc.exe), and pipeline task configuration ordering.",
+      "files": [
+        "c:\\repos\\contoso-app\\OpsObjects\\PrimeInstall\\components\\ADS\\install.yml",
+        "c:\\repos\\contoso-app\\OpsObjects\\PrimeInstall\\modules\\PrimeInstall.Service\\PrimeInstall.Service.psm1"
+      ],
+      "expectations": [
+        "Flags error handling concern: Write-Warning used where the operation should throw a terminating error (Remove-PrimeServiceDependency line 177)",
+        "Flags error handling concern: broad try-catch scope that obscures which line actually throws the expected exception",
+        "Flags consistency concern: service name validation logic duplicated rather than extracted to a shared helper",
+        "Flags module usage concern: reliance on $LASTEXITCODE global variable instead of capturing sc.exe output in a structured way",
+        "Flags inconsistent data structures across similar functions (Get-PrimeServiceStatus vs Get-PrimeService return different shapes for similar data)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review the file OpsObjects/PrimeInstall/components/ATS/install.yml for infrastructure and deployment quality issues. Focus on error handling, security, and pipeline best practices.",
+      "expected_output": "Should flag: errorActionPreference SilentlyContinue without justification, condition: succeededOrFailed() running tasks despite prior failures, hardcoded network path in default parameter, hardcoded remote paths (D:\\Temp\\PrimeInstall\\...), passwords assigned to inline variables.",
+      "files": ["c:\\repos\\contoso-app\\OpsObjects\\PrimeInstall\\components\\ATS\\install.yml"],
+      "expectations": [
+        "Flags errorActionPreference SilentlyContinue as a concern (error suppression without justification)",
+        "Flags condition: succeededOrFailed() as unusual — tasks running after prior failures need explanation",
+        "Flags the hardcoded network share path in the licenseStoragePath default parameter",
+        "Flags hardcoded remote paths like D:\\Temp\\PrimeInstall as values that should be parameterized",
+        "Identifies password handling concerns (passwords passed through inline script variables)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Review OpsObjects/PrimeInstall/components/ADS/install.yml and OpsObjects/PrimeInstall/components/AMBA/install.yml together. Focus on consistency between these two component installation files and any cross-cutting concerns.",
+      "expected_output": "Should flag: inconsistent template reference styles (relative vs absolute paths), different patterns for module path setup, different approaches to password handling, inconsistent use of condition guards, different error handling configurations.",
+      "files": [
+        "c:\\repos\\contoso-app\\OpsObjects\\PrimeInstall\\components\\ADS\\install.yml",
+        "c:\\repos\\contoso-app\\OpsObjects\\PrimeInstall\\components\\AMBA\\install.yml"
+      ],
+      "expectations": [
+        "Flags inconsistent template reference paths — ADS uses relative (../../shared/...) while AMBA uses absolute (/OpsObjects/PrimeInstall/shared/...@self)",
+        "Flags that AMBA duplicates PSModulePath setup across multiple tasks while ADS handles it differently",
+        "Flags differences in parameter handling between the two components that should follow a common pattern",
+        "Identifies that both files pass secrets as inline command arguments, which is a shared concern across components"
+      ]
+    }
+  ]
+}

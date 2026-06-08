@@ -1,0 +1,10 @@
+name: azure-devops
+version: 1.0.0
+description: Generic Azure DevOps skills — pipeline running, PR context, PR review assessment, PR stacking, URL routing, and org discovery.
+author: Stegeman
+
+dependencies:
+  apm: []
+  mcp: []
+
+includes: auto

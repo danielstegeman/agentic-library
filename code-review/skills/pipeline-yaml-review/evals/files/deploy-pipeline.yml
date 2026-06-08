@@ -1,0 +1,27 @@
+trigger: none
+
+parameters:
+  - name: environment
+    displayName: Environment
+    default: ''
+  - name: doRestore
+    displayName: Restore database
+    default: false
+
+stages:
+  - stage: Deploy
+    displayName: Deploy Arena
+    jobs:
+      - job: DeployJob
+        steps:
+          - template: ./templates/DeployArena.yml
+            parameters:
+              env: ${{ parameters.environment }}
+              restore: ${{ parameters.doRestore }}
+
+          - task: PowerShell@2
+            displayName: 'Run post-deploy checks'
+            inputs:
+              targetType: inline
+              script: |
+                Write-Host "Deployment complete"

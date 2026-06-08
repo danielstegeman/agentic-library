@@ -1,0 +1,23 @@
+{
+  "skill_name": "pr-review-assessment",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Can you assess the review comments on PR 42 in contoso-app and tell me which ones I need to fix?",
+      "expected_output": "Fetches PR metadata and diff, lists all active review threads with code context, assigns Correct-as-is/Needs-fix/Discuss verdict to each, provides drafted replies for Correct-as-is items, and asks whether to post them.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "https://dev.azure.com/contoso/Contoso/_git/contoso-app/pullrequest/42 — help me respond to Alex's comments",
+      "expected_output": "Parses the URL, fetches threads, drafts polite Correct-as-is replies in Alex's name, and offers to post them via MCP.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Go through the review threads on my PR and draft replies for the comments where the code is actually fine",
+      "expected_output": "Without a PR ID the skill asks which PR to assess, then proceeds with the standard workflow once the ID is provided.",
+      "files": []
+    }
+  ]
+}

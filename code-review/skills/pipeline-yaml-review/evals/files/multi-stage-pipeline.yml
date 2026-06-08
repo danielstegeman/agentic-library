@@ -1,0 +1,66 @@
+trigger: none
+
+stages:
+  - stage: DeployO
+    displayName: Deploy to O
+    jobs:
+      - job: Deploy
+        steps:
+          - task: PowerShell@2
+            displayName: 'Stop ADS Service'
+            inputs:
+              targetType: inline
+              script: |
+                Stop-Service -Name "ADS" -Force
+
+          - task: PowerShell@2
+            displayName: 'Deploy artifacts'
+            inputs:
+              targetType: inline
+              script: |
+                Copy-Item -Path "$(Pipeline.Workspace)/drop/*" -Destination "C:\FrontArena" -Recurse -Force
+
+          - task: PowerShell@2
+            displayName: 'Start ADS Service'
+            inputs:
+              targetType: inline
+              script: |
+                Start-Service -Name "ADS"
+
+  - stage: DeployT
+    displayName: Deploy to T
+    jobs:
+      - job: Deploy
+        steps:
+          - task: PowerShell@2
+            displayName: 'Stop ADS Service'
+            inputs:
+              targetType: inline
+              script: |
+                Stop-Service -Name "ADS" -Force
+
+          - task: PowerShell@2
+            displayName: 'Deploy artifacts'
+            inputs:
+              targetType: inline
+              script: |
+                Copy-Item -Path "$(Pipeline.Workspace)/drop/*" -Destination "C:\FrontArena" -Recurse -Force
+
+          - task: PowerShell@2
+            displayName: 'Start ADS Service'
+            inputs:
+              targetType: inline
+              script: |
+                Start-Service -Name "ADS"
+
+  - stage: Cleanup
+    displayName: Cleanup
+    jobs:
+      - job: CleanupJob
+        steps:
+          - task: PowerShell@2
+            displayName: 'Remove temp files'
+            inputs:
+              targetType: inline
+              script: |
+                Remove-Item -Path "C:\temp\deploy" -Recurse -Force

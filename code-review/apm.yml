@@ -1,0 +1,10 @@
+name: code-review
+version: 1.0.0
+description: Code review skills and orchestration agent for PowerShell modules, IaC, and ADO pipeline YAML. Covers defensive coding, logging, infrastructure, module architecture, and pipeline YAML review dimensions.
+author: Stegeman
+
+dependencies:
+  apm: []
+  mcp: []
+
+includes: auto

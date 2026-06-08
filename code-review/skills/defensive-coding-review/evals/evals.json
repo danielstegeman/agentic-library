@@ -1,0 +1,26 @@
+{
+  "skill_name": "defensive-coding-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this PowerShell function for defensive coding anti-patterns. Focus on redundant guards, error handling, and control flow.",
+      "expected_output": "Should flag: (1) Test-Path before Remove-Item -Force is redundant, (2) Write-Warning + return instead of throw is warn-and-continue, (3) catch block that only logs and re-throws without adding context is useless",
+      "files": ["evals/files/Copy-ArenaFiles.ps1"],
+      "expectations": [
+        "Flags the Test-Path check before Remove-Item -Force as redundant because -Force already handles non-existent paths",
+        "Flags the Write-Warning + return pattern as warn-and-continue — should throw instead",
+        "Flags the catch block that logs with Write-Error then re-throws as adding no value"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this PowerShell function for defensive coding issues. Look for validation patterns, return value design, and error signaling.",
+      "expected_output": "Should flag: (1) manual IsNullOrEmpty checks instead of ValidateNotNullOrEmpty parameter attributes, (2) bool return value pattern instead of throwing on failure",
+      "files": ["evals/files/Install-ArenaComponent.ps1"],
+      "expectations": [
+        "Flags the manual [string]::IsNullOrEmpty() checks and recommends [ValidateNotNullOrEmpty()] parameter attributes instead",
+        "Flags the return $true/$false pattern and explains the function should throw on failure rather than returning a boolean"
+      ]
+    }
+  ]
+}
