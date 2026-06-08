@@ -36,6 +36,11 @@ Show the detected language and recommended image. Ask if this is correct, or if 
 
 Consult [images.md](./references/images.md) for the full list of official images.
 
+**Always look up the latest available tags** before recommending a pinned version by fetching:
+`https://mcr.microsoft.com/v2/devcontainers/<image-name>/tags/list`
+
+Prefer `-noble` (Ubuntu) variants over `-bookworm` (Debian) to avoid stale apt repository issues (e.g., expired Yarn GPG keys in Bookworm-based images).
+
 ### Question 2: Additional Features
 
 Ask which additional tools to install as Dev Container Features. Common choices:
