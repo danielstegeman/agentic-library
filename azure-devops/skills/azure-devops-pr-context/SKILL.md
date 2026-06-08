@@ -26,8 +26,10 @@ Accept the PR in any of these forms:
 
 - **Full URL**: `https://dev.azure.com/{org}/{project}/_git/{repo}/pullrequest/{id}`
   → extract `Org`, `Project`, `Repo`, `PrId`
+- **On-premises / custom domain URL**: `https://<host>/{collection}/{project}/_git/{repo}/pullrequest/{id}`
+  → extract `Project`, `Repo`, `PrId` from the path. Ask the user for `-Org` as it cannot be reliably inferred from on-premises URLs.
 - **PR ID only**: e.g. "PR 41032 in my-repo"
-  → default ask the user.
+  → ask the user for the missing `-Org`, `-Project`, and `-Repo` before running the script. If the user cannot supply these, suggest they retrieve the full PR URL from the Azure DevOps web UI (browser address bar) and re-provide it. Do not proceed with a partial command.
 
 ---
 
@@ -55,15 +57,21 @@ The script is located in the same folder as this SKILL.md:
 .\azure-devops-pr-context\Get-PrContext.ps1
 ```
 
-Run the script — it writes the full output to a file and prints the path:
+Run the script with all required parameters — it writes the full output to a file and prints the path:
 
 ```powershell
-.\Get-PrContext.ps1 -PrId <id>
+.\Get-PrContext.ps1 -PrId <id> -Org <org> -Project <project> -Repo <repo>
 ```
 
 The script prints a single line: `Output written to: <path>`. Use `read_file` on that path to load the PR context.
 
-**Large diffs**: If the diff is large (e.g. contains generated or binary-like files such as XSD schemas), note the output file path and re-run with `-PathFilter` to scope the diff to relevant files.
+**Handling Large Output**
+
+(a) **LARGE_PR exit** — If the script exits after the file list and prints a `LARGE_PR:` message, ask the user which file paths or directory prefixes to include and re-run with `-PathFilter <path1>, <path2>` using relative paths from the repo root (e.g. `-PathFilter src/Services, src/Api`). If the user confirms to proceed without a PathFilter, re-run the script without `-PathFilter` and process the full output; warn the user that the diff may be very large and context window limits could truncate the analysis. Resolve this condition before reading any diff content.
+
+(b) **Large diff content** — If the script completes but the output file exceeds 500 KB, or if the diff contains generated or schema files (e.g. XSD, minified JS, binary-like content), re-run with `-PathFilter` scoped to the source files under active review. Inform the user which files were excluded.
+
+If both conditions occur simultaneously, resolve (a) first.
 
 ---
 
@@ -123,7 +131,7 @@ omitted — the rest of the output is still written.
 LARGE_PR: <N> files changed. Re-run with -PathFilter to scope the diff, or confirm to proceed.
 ```
 
-In that case, ask the user which paths to include and re-run with `-PathFilter`.
+In that case, follow the **Handling Large Output** guidance in Step 2 — see (a) above.
 
 ---
 
@@ -137,3 +145,5 @@ In that case, ask the user which paths to include and re-run with `-PathFilter`.
 | Commits not reachable locally | Report which SHA is missing; suggest `git fetch --all` |
 | Diff is empty | Report "No changes between the two commits" — do not invent changes |
 | Repo GUID needed by other MCP calls | Extract from `az devops repo show` or ask the user |
+| `Get-PrContext.ps1` not found | Inform the user that the script is missing from `.\azure-devops-pr-context\` and cannot proceed. Do not attempt to reconstruct the script or run individual `az` commands as a substitute. |
+| `read_file` fails on the output path | Report the path to the user and ask them to open it manually, or re-run the script with `-OutputFile <accessible-path>` to write to a location the agent can read. |

@@ -53,6 +53,14 @@ Extract organization, project, and resource ID from Azure DevOps URLs; determine
 
 > **Unrecognized paths**: If the URL path contains a segment starting with `_` that does not match any pattern above, do not fall back to azure-devops-discovery. Instead, inform the user: "This URL references an unsupported Azure DevOps resource type ([path segment]). Supported types are: build, work item, git repository, pull request, and test plan."
 
+> **Edge cases**:
+> - **URL with query-string-only project**: Some shortened URLs omit the project segment (e.g., `https://dev.azure.com/org/_build?...`). Treat the project as unknown and ask the user to confirm the project before routing.
+> - **Trailing slashes / fragments**: Normalize the URL by stripping trailing slashes and ignoring `#` fragments before pattern matching.
+> - **Non-numeric IDs**: If an expected numeric ID (buildId, workItemId, pullRequestId) is present but non-numeric, do not attempt routing; respond: "The [parameter] value '[value]' is not a valid numeric ID. Please verify the URL."
+> - **Multiple matching patterns**: If a URL simultaneously matches more than one pattern (e.g., a `_git/` URL that also contains `?buildId=`), prefer the more specific pattern (pull request > git repository; work item query param only when path contains `_workitems`).
+> - **Old visualstudio.com hostnames**: URLs with the format `https://{org}.visualstudio.com/{project}/...` follow the same path-based routing rules. Strip the org from the hostname and treat the remaining path identically to a `dev.azure.com` URL.
+> - **Percent-encoded characters**: Decode percent-encoded characters in the URL before pattern matching and ID extraction.
+
 **Extraction Parameters**
 - Organization: Path segment 1 after `dev.azure.com/`
 - Project: Path segment 2
