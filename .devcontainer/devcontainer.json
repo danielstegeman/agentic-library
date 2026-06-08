@@ -1,6 +1,8 @@
 {
     "name": "Agentic Library Dev Container",
-    "image": "mcr.microsoft.com/devcontainers/dotnet:1-9.0",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
 
     "features": {
         "ghcr.io/devcontainers/features/azure-cli:1": {},
