@@ -1,7 +1,7 @@
 name: git-tools
 version: 1.0.0
 description: Generic git workflow skills — conventional commits, squash, and worktree management.
-author: Stegeman
+author: danielstegeman
 
 dependencies:
   apm: []

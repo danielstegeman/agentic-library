@@ -1,7 +1,7 @@
 name: misc
 version: 1.0.0
 description: Miscellaneous reusable skills that don't belong to a specific domain.
-author: Stegeman
+author: danielstegeman
 
 dependencies:
   apm: []

@@ -17,10 +17,10 @@ Generic, reusable agent skills and agents for GitHub Copilot (and other APM-comp
 # apm.yml
 dependencies:
   apm:
-    - Stegeman/agentic-library/git-tools
-    - Stegeman/agentic-library/azure-devops
-    - Stegeman/agentic-library/code-review
-    - Stegeman/agentic-library/agent-engineering
+    - danielstegeman/agentic-library/git-tools
+    - danielstegeman/agentic-library/azure-devops
+    - danielstegeman/agentic-library/code-review
+    - danielstegeman/agentic-library/agent-engineering
 ```
 
 ## Philosophy
