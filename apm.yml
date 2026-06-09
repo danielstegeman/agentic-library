@@ -6,10 +6,10 @@ author: danielstegeman
 
 dependencies:
   apm:
-  - ./git-tools
-  - ./agent-engineering
-  - ./azure-devops
-  - ./code-review
-  - ./misc
-  - ./containers
+  - danielstegeman/agentic-library/git-tools
+  - danielstegeman/agentic-library/agent-engineering
+  - danielstegeman/agentic-library/azure-devops
+  - danielstegeman/agentic-library/code-review
+  - danielstegeman/agentic-library/misc
+  - danielstegeman/agentic-library/containers
   mcp: []

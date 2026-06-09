@@ -163,6 +163,31 @@ The package has `apm.yml` but APM can't identify its type. Fix by choosing one o
 
 3. **APM package** — add `.apm/skills/<name>/SKILL.md` (or another primitive type under `.apm/`).
 
+### Testing an aggregator package locally (without pushing to GitHub)
+
+Remote packages cannot reference local paths (`./sub-package`). If a root `apm.yml` uses GitHub references (e.g. `owner/repo/sub-package`), local changes won't be picked up until pushed. To test the full aggregator install locally:
+
+```bash
+# 1. Pack the root package into a local bundle
+apm pack                              # writes ./build/<package-name> (directory bundle)
+apm pack --archive                    # alternatively, writes ./build/<package-name>.tar.gz
+
+# 2. Install from the local bundle into a consumer project
+apm install ./path/to/build/<package-name> --target copilot
+apm install ./path/to/build/<package-name>.tar.gz --target copilot
+```
+
+Re-pack after each change. The bundle install is fully offline and reproduces exactly what a remote consumer would get.
+
+For development on individual sub-packages, work inside the sub-package directory instead — each sub-package is independently installable:
+
+```bash
+cd git-tools
+apm install --target copilot
+```
+
+---
+
 ### Lockfile drift in CI
 
 ```bash
