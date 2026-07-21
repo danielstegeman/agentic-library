@@ -13,8 +13,7 @@
         completes.
 
     Report mode (-BuildNumber or -RunStateFile):
-        Reads the run-state, queries az for status. If the run is still in
-        flight, prints a status line and exits with code 2 so the agent waits.
+        Reads the run-state and polls az until the run reaches a terminal state.
         Once complete, downloads failed-task logs and test results, then writes
         a focused report.md with Summary / Failures / Failed tests / Warnings /
         Timing sections.
@@ -30,6 +29,18 @@
 
 .PARAMETER AllowDirty
     Trigger mode only. Skip the uncommitted-changes guard.
+
+.PARAMETER Wait
+    Trigger mode only. Poll until the run completes and produce the report before exiting.
+    Without this switch the script exits immediately after triggering (fire-and-forget).
+
+.PARAMETER PollIntervalSeconds
+    Seconds between status polls when -Wait is used (trigger mode) or in report mode.
+    Defaults to 30.
+
+.PARAMETER TimeoutMinutes
+    Maximum number of minutes to wait before aborting the poll with exit code 3.
+    Defaults to 120.
 
 .PARAMETER KeepRawLogs
     Report mode only. Save downloaded raw logs under raw/ inside the run folder.
@@ -55,6 +66,19 @@ param(
     [Parameter(ParameterSetName = 'Trigger')]
     [switch]$AllowDirty,
 
+    [Parameter(ParameterSetName = 'Trigger')]
+    [switch]$Wait,
+
+    [Parameter(ParameterSetName = 'Trigger')]
+    [Parameter(ParameterSetName = 'ReportByBuildNumber')]
+    [Parameter(ParameterSetName = 'ReportByStateFile')]
+    [int]$PollIntervalSeconds = 30,
+
+    [Parameter(ParameterSetName = 'Trigger')]
+    [Parameter(ParameterSetName = 'ReportByBuildNumber')]
+    [Parameter(ParameterSetName = 'ReportByStateFile')]
+    [int]$TimeoutMinutes = 120,
+
     [Parameter(ParameterSetName = 'ReportByBuildNumber')]
     [Parameter(ParameterSetName = 'ReportByStateFile')]
     [switch]$KeepRawLogs
@@ -74,7 +98,10 @@ function Invoke-TriggerMode {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$ConfigPath,
-        [switch]$AllowDirty
+        [switch]$AllowDirty,
+        [switch]$Wait,
+        [int]$PollIntervalSeconds = 30,
+        [int]$TimeoutMinutes = 120
     )
 
     if (-not (Test-Path -LiteralPath $ConfigPath)) {
@@ -226,6 +253,14 @@ function Invoke-TriggerMode {
     Write-Host "  Run ID       : $runId"
     Write-Host "  URL          : $webUrl"
     Write-Host "  Run state    : $statePath"
+    if ($Wait) {
+        Write-Host ""
+        Write-Host "Waiting for the run to complete..." -ForegroundColor Yellow
+        Wait-PipelineRun -RunId $runId -OrganizationUrl $connection.OrganizationUrl -Project $connection.Project -PollIntervalSeconds $PollIntervalSeconds -TimeoutMinutes $TimeoutMinutes
+        Invoke-ReportMode -BuildNumber $buildNumber -PollIntervalSeconds $PollIntervalSeconds -TimeoutMinutes $TimeoutMinutes
+        return
+    }
+
     Write-Host ""
     Write-Host "Re-invoke the agent once the run finishes and run:" -ForegroundColor Yellow
     Write-Host "  .\Invoke-PipelineRun.ps1 -BuildNumber $buildNumber"
@@ -363,7 +398,9 @@ function Invoke-ReportMode {
     param(
         [string]$BuildNumber,
         [string]$RunStateFile,
-        [switch]$KeepRawLogs
+        [switch]$KeepRawLogs,
+        [int]$PollIntervalSeconds = 30,
+        [int]$TimeoutMinutes = 120
     )
 
     $statePath = Resolve-RunStateFile -BuildNumber $BuildNumber -RunStateFile $RunStateFile
@@ -378,10 +415,8 @@ function Invoke-ReportMode {
     )
 
     if ($run.status -ne 'completed') {
-        Write-Host ""
-        Write-Host "Run is still $($run.status). Try again once it finishes." -ForegroundColor Yellow
-        Write-Host "  URL: $($state.url)"
-        exit 2
+        Write-Host "Run is still $($run.status). Polling until complete..." -ForegroundColor Yellow
+        $run = Wait-PipelineRun -RunId $state.runId -OrganizationUrl $state.organizationUrl -Project $state.project -PollIntervalSeconds $PollIntervalSeconds -TimeoutMinutes $TimeoutMinutes
     }
 
     $runDir = Split-Path -Parent $statePath
@@ -592,6 +627,6 @@ function Invoke-ReportMode {
 #--------------------------------------------------------------------
 
 switch ($PSCmdlet.ParameterSetName) {
-    'Trigger' { Invoke-TriggerMode -ConfigPath $ConfigPath -AllowDirty:$AllowDirty }
-    default { Invoke-ReportMode -BuildNumber $BuildNumber -RunStateFile $RunStateFile -KeepRawLogs:$KeepRawLogs }
+    'Trigger' { Invoke-TriggerMode -ConfigPath $ConfigPath -AllowDirty:$AllowDirty -Wait:$Wait -PollIntervalSeconds $PollIntervalSeconds -TimeoutMinutes $TimeoutMinutes }
+    default { Invoke-ReportMode -BuildNumber $BuildNumber -RunStateFile $RunStateFile -KeepRawLogs:$KeepRawLogs -PollIntervalSeconds $PollIntervalSeconds -TimeoutMinutes $TimeoutMinutes }
 }

@@ -1,0 +1,8 @@
+{
+  "name": "agentic-library",
+  "version": "1.0.0",
+  "description": "A collection of generic, reusable agent skills and agents for git workflows, Azure DevOps, code review, and agent engineering. No project-specific content.\n",
+  "author": {
+    "name": "Stegeman"
+  }
+}

@@ -404,6 +404,60 @@ function Invoke-AzdoRestApi {
     }
 }
 
+function Wait-PipelineRun {
+    <#
+    .SYNOPSIS
+        Poll an Azure DevOps pipeline run until it reaches a terminal state.
+
+    .DESCRIPTION
+        Calls az pipelines runs show in a loop, printing one progress line per poll.
+        Returns the final run object once status is 'completed' or 'canceled'.
+        Throws a terminating error if TimeoutMinutes elapses before the run finishes.
+
+    .OUTPUTS
+        PSCustomObject — the az pipelines runs show response for the finished run.
+    #>
+    [CmdletBinding()]
+    [OutputType([psobject])]
+    param(
+        [Parameter(Mandatory)][int]$RunId,
+        [Parameter(Mandatory)][string]$OrganizationUrl,
+        [Parameter(Mandatory)][string]$Project,
+        [int]$PollIntervalSeconds = 30,
+        [int]$TimeoutMinutes = 120
+    )
+
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    $timeoutMs = $TimeoutMinutes * 60 * 1000
+
+    Write-Host "Polling run $RunId every ${PollIntervalSeconds}s (timeout: ${TimeoutMinutes}m)..." -ForegroundColor Cyan
+
+    while ($true) {
+        $run = Invoke-Az -ArgumentList @(
+            'pipelines', 'runs', 'show',
+            '--id', "$RunId",
+            '--organization', $OrganizationUrl,
+            '--project', $Project
+        )
+
+        $elapsed = [Math]::Round($stopwatch.Elapsed.TotalSeconds)
+        Write-Host "  [+${elapsed}s] status: $($run.status)" -ForegroundColor DarkCyan
+
+        if ($run.status -in 'completed', 'canceled') {
+            $stopwatch.Stop()
+            return $run
+        }
+
+        if ($stopwatch.ElapsedMilliseconds -ge $timeoutMs) {
+            $stopwatch.Stop()
+            $webUrl = if ($run._links -and $run._links.web) { $run._links.web.href } else { '' }
+            throw "Timed out after ${TimeoutMinutes} minutes waiting for run $RunId (last status: $($run.status)).$(if ($webUrl) { " Check: $webUrl" })"
+        }
+
+        Start-Sleep -Seconds $PollIntervalSeconds
+    }
+}
+
 Export-ModuleMember -Function @(
     'Assert-Prerequisite',
     'Get-RepoRoot',
@@ -419,5 +473,6 @@ Export-ModuleMember -Function @(
     'Get-PendingConfigDir',
     'ConvertTo-RunParameterString',
     'Get-AzdoAccessToken',
-    'Invoke-AzdoRestApi'
+    'Invoke-AzdoRestApi',
+    'Wait-PipelineRun'
 )

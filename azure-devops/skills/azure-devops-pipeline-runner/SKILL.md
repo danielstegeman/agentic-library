@@ -1,6 +1,6 @@
 ---
 name: azure-devops-pipeline-runner
-description: 'Run, monitor, and analyze Azure DevOps pipelines via fire-and-forget scripts. Generates a YAML run-config from the pipeline definition, triggers the run, then processes the completed run into a failure-focused markdown report. USE FOR: run a pipeline, trigger a build, kick off a deployment, re-run a failed pipeline, resume pipeline run, process pipeline log, what failed in build, generate pipeline report, pipeline failure report, analyze the run of build <number>. DO NOT USE FOR: creating new pipeline definitions (use azure-devops-pipelines), reviewing pipeline YAML (use pipeline-yaml-review).'
+description: 'Run, monitor, and analyze Azure DevOps pipelines via fire-and-forget scripts. Generates a YAML run-config from the pipeline definition, triggers the run, then processes the completed run into a failure-focused markdown report. USE FOR: run a pipeline, trigger a build, kick off a deployment, re-run a failed pipeline, resume pipeline run, process pipeline log, what failed in build, generate pipeline report, pipeline failure report, analyze the run of build <number>. DO NOT USE FOR: creating new pipeline definitions (use azure-devops-pipelines), reviewing pipeline YAML (use code-review).'
 ---
 
 # Azure DevOps Pipeline Runner
@@ -14,7 +14,7 @@ Run and report on Azure DevOps pipelines from the command line using three artif
 | `scripts/Invoke-PipelineRun.ps1` | Trigger a run (mode 1) **or** produce a report from a completed run (mode 2) |
 | `examples/run-config.example.yml` | Example of an edited run-config |
 
-The flow is intentionally **fire-and-forget**: the agent does not block on long-running pipelines. After triggering, the user re-invokes the agent once the run finishes, and the same script produces the report.
+The flow supports two modes: **fire-and-forget** (default) where the agent triggers and exits so the user can wait; and **wait-until-complete** (`-Wait`) where the agent blocks, polls, and produces the report in one step.
 
 ## When to use this skill
 
@@ -44,17 +44,17 @@ The scripts call `Assert-Prerequisite` at startup and fail with an actionable me
 │     → run-config.yml         │
 └──────────────┬───────────────┘
                ▼
-┌──────────────────────────────┐
-│  2. Trigger                  │  Invoke-PipelineRun.ps1 -ConfigPath <path>
-│     → run-state.json         │  (script exits immediately, prints resume command)
-└──────────────┬───────────────┘
-               ▼
-        (user waits for the run to complete)
-               │
-               ▼
-┌──────────────────────────────┐
-│  3. Report                   │  Invoke-PipelineRun.ps1 -BuildNumber <n>
-│     → report.md              │  (exits 2 if still running, exits 0/1 when done)
+┌──────────────────────────────────────────────────────────────────────┐
+│  2. Trigger (fire-and-forget)              │  -Wait (blocks in-agent) │
+│     → run-state.json                       │                          │
+│     → prints resume command + exits        │  polls until done        │
+└──────────────┬─────────────────────────────┴────────────┬────────────┘
+               │ (user waits for run to complete)          │
+               ▼                                           ▼
+┌──────────────────────────────┐             ┌────────────────────────┐
+│  3. Report                   │             │  report.md written     │
+│     → polls until done       │             │  agent diagnoses now   │
+│     → report.md written      │             └────────────────────────┘
 └──────────────────────────────┘
 ```
 
@@ -86,10 +86,22 @@ Tell the user to open the file, edit values, and confirm the branch is correct.
 
 ### Step 2 — Trigger the run
 
+**Fire-and-forget (default)** — exits immediately after queuing:
+
 ```powershell
 & '<path-to-skill>\scripts\Invoke-PipelineRun.ps1' `
     -ConfigPath '.agent-artifacts/pipeline-runs/_pending/run-config.yml'
 ```
+
+**Wait until complete** — polls and writes the report before returning:
+
+```powershell
+& '<path-to-skill>\scripts\Invoke-PipelineRun.ps1' `
+    -ConfigPath '.agent-artifacts/pipeline-runs/_pending/run-config.yml' `
+    -Wait
+```
+
+Optional poll parameters (both modes): `-PollIntervalSeconds <n>` (default 30) and `-TimeoutMinutes <n>` (default 120).
 
 The script:
 1. Re-validates parameters against the pipeline YAML (rejects unknown names and out-of-set choice values)
@@ -98,9 +110,12 @@ The script:
 4. Resolves the ADO pipeline definition id (from `pipelineId` in the config, or auto-discovers by matching the YAML filename against `az pipelines list`)
 5. POSTs to `_apis/pipelines/{id}/runs?api-version=7.1-preview.1` with templateParameters/variables/branch (object and array parameters are JSON-string-encoded; see note below)
 6. Writes `run-state.json` to `.agent-artifacts/pipeline-runs/<buildNumber>/`
-7. Prints the build URL and the resume command, then exits
+7. If `-Wait`: polls until the run completes, then writes `report.md` (same as Step 3)
+8. Without `-Wait`: prints the build URL and the resume command, then exits
 
-**Stop here.** Tell the user: "Re-invoke me with `process the pipeline run for build <buildNumber>` once it finishes."
+**Without `-Wait`: stop here.** Tell the user: "Re-invoke me with `process the pipeline run for build <buildNumber>` once it finishes."
+
+**With `-Wait`**: stay in the session — the script polls and writes the report automatically. Proceed to read `report.md` and diagnose.
 
 ### Step 3 — Process the result
 
@@ -109,10 +124,12 @@ The script:
     -BuildNumber 20260604.3
 ```
 
+If the run is still in progress, the script polls automatically until it completes (using `-PollIntervalSeconds` and `-TimeoutMinutes` defaults). No manual re-invocation needed.
+
 Exit codes:
 - `0` — run completed successfully, `report.md` written
 - `1` — run completed but failed, `report.md` written
-- `2` — run still in flight; ask the user to wait and re-invoke
+- `3` — polling timed out before the run reached a terminal state
 
 `report.md` contains five sections:
 
@@ -182,12 +199,12 @@ The pipeline runtime, however, accepts these values when they are **JSON-encoded
 | `Parameter '<x>' is not defined in <pipeline>.yml` | Typo in config or stale config | Regenerate with `New-PipelineRunConfig.ps1` |
 | `Parameter '<x>' value '<v>' is not in allowed set` | Choice violation | Use one of the values from the inline comment |
 | Run-state.json missing for build | Build was not triggered via `Invoke-PipelineRun.ps1` | Pass `-RunStateFile` pointing at the JSON, or re-trigger via this skill |
-| Report exits with code 2 | Run still queued/running | Wait, then re-run the report command |
+| `Report exits with code 3` | Polling timed out | Increase `-TimeoutMinutes` or check the run manually; re-run the report command once complete |
 | `Value cannot be null. Parameter name: runParameters` | Object/array parameter sent as native JSON to a non-preview run | Fixed in current version (script auto-stringifies); upgrade if you see this |
 | Trigger fails with no pipeline-id error | YAML filename does not match the ADO definition name | Add `pipelineId: <n>` to the config, or regenerate it (auto-discovery is on by default) |
 
 ## Related skills
 
 - `azure-devops-pipelines` — create new pipeline definitions
-- `pipeline-yaml-review` — review pipeline YAML for conventions
+- `code-review` — two-axis review of changes, including pipeline YAML conventions
 - `agent-artifacts` — manage the `.agent-artifacts/` working folder

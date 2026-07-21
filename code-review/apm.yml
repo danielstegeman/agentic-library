@@ -1,6 +1,6 @@
 name: code-review
-version: 1.0.0
-description: Code review skills and orchestration agent for PowerShell modules, IaC, and ADO pipeline YAML. Covers defensive coding, logging, infrastructure, module architecture, and pipeline YAML review dimensions.
+version: 2.0.0
+description: Two-axis code review skill. Reviews a diff since a fixed point (commit, branch, tag, PR, or merge-base) along independent Standards and Spec axes, run as parallel subagents and reported side by side without reranking.
 author: danielstegeman
 
 dependencies:
